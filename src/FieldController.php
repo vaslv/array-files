@@ -8,31 +8,36 @@ use Illuminate\Http\Request;
 
 class FieldController extends Controller
 {
-    public function index(Request $request)
-    {
-        return "array files by halimtuhu";
-    }
-
     public function upload(Request $request)
     {
-        $disk = $request->disk ? $request->disk : 'public';
-        $path = $request->path ? $request->path : '/';
+        $disk = $request->get('disk', 'public');
+        $path = $request->get('path', '/');
 
         $file = Storage::disk($disk)->putFile($path, $request->file('file'));
 
         $data = [
             'originalName' => $request->file('file')->getClientOriginalName(),
             'name' => $file,
-            'url' => Storage::url($file),
+            'url' => Storage::disk($disk)->url($file),
         ];
 
-        return $data;
+        return response()
+            ->json($data);
     }
 
-    public function delete($file)
+    public function delete(Request $request)
     {
-        Storage::delete($file);
+        $file = $request->get('file');
+        $disk = $request->get('disk', 'public');
+        $status = true;
 
-        return "success";
+        if (Storage::disk($disk)->has($file)) {
+            $status = Storage::disk($disk)->delete($file);
+        }
+
+        return response()
+            ->json([
+                'status' => $status,
+            ]);
     }
 }
